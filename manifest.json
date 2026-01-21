@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "StackSense",
+  "description": "AI buddy for students building tech projects",
+  "version": "0.1.0",
+
+  "permissions": ["storage", "activeTab", "sidePanel"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+
+  "action": {
+    "default_title": "StackSense"
+  }
+}

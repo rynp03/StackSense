@@ -1,0 +1,15 @@
+body {
+  font-family: system-ui, sans-serif;
+  padding: 12px;
+}
+
+button {
+  padding: 8px 12px;
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+#output {
+  margin-top: 12px;
+  font-size: 14px;
+}
