@@ -1,20 +1,53 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Extension Buddy</title>
+    <title>StackSense</title>
     <link rel="stylesheet" href="sidepanel.css" />
   </head>
   <body>
-    <h1>👋 Extension Buddy</h1>
-    <p>Your AI helper for tech tasks.</p>
+    <!-- Header -->
+    <header class="header">
+      <img src="logo.png" alt="StackSense logo" class="logo" />
+      <div class="brand">
+        <h1>StackSense</h1>
+        <p>Your AI dev sidekick</p>
+      </div>
+      <button id="resetBtn" class="icon-btn" title="Start a new response">
+        🔄
+      </button>
+    </header>
 
-    <button id="askBtn">Ask Buddy</button>
+    <!-- Actions -->
+    <section class="actions">
+      <p class="section-title">What do you want to do?</p>
 
-    <div id="output">
-      <em>No question asked yet.</em>
-    </div>
+      <button class="action-btn">Explain this</button>
+      <button class="action-btn">Fix an error</button>
+      <button class="action-btn">Improve code</button>
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="stackToggle" />
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label">Search on Stack</span>
+      </div>
+    </section>
 
+    <!-- Output -->
+    <section class="output">
+      <p class="section-title">Response</p>
+
+      <div class="output-box">
+        <p class="placeholder">Select text on the page and choose an action.</p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>Context: Not detected</span>
+    </footer>
+    <script src="marked.min.js"></script>
     <script src="sidepanel.js"></script>
   </body>
 </html>
