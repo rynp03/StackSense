@@ -1,4 +1,4 @@
-const GROQ_API_KEY = "YOUR_KEY";
+const GROQ_API_KEY = "api-key";
 const GROQ_MODEL = "llama-3.1-8b-instant";
 
 console.log("🧠 StackSense AI brain started");
@@ -7,6 +7,29 @@ console.log("🧠 StackSense AI brain started");
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create("keepAlive", { periodInMinutes: 1 });
 });
+
+const CONFUSION_KEYWORDS = [
+  "doesn't work",
+  "not working",
+  "still broken",
+  "can you explain",
+  "does this work",
+  "not correct",
+  "wrong",
+  "error",
+  "fails",
+];
+
+function confusionScore(comments) {
+  let score = 0;
+  comments.forEach((c) => {
+    const lower = c.toLowerCase();
+    CONFUSION_KEYWORDS.forEach((k) => {
+      if (lower.includes(k)) score += 1;
+    });
+  });
+  return score;
+}
 
 function stripHtml(html) {
   if (!html || typeof html !== "string") return "";
@@ -137,6 +160,19 @@ Return ONLY the search query.
   return query.replace(/["`\n]/g, "").trim();
 }
 
+function buildAutoBadgeReason(a) {
+  const reasons = [];
+
+  if (a.accepted) reasons.push("Accepted by the question author");
+  if (a.votes > 5) reasons.push(`Community score: ${a.votes} upvotes`);
+  if (a.confusion > 0)
+    reasons.push(`${a.confusion} confused comments detected`);
+
+  reasons.push(`AI confidence score: ${a.confidence}%`);
+
+  return reasons.join(". ");
+}
+
 async function handleIntent({ action, context, mode }) {
   const intent = mapIntent(action);
   const content = context.selection || context.title;
@@ -180,6 +216,12 @@ async function handleIntent({ action, context, mode }) {
     const enrichedAnswers = await Promise.all(
       answers.slice(0, 2).map(async (ans) => {
         const comments = await fetchAnswerComments(ans.answer_id);
+
+        const cleanComments = comments
+          .map((c) => stripHtml(c.body))
+          .filter((text) => text.length >= 8);
+
+        const confusion = confusionScore(cleanComments);
         return {
           body: ans.body
             .replace(/<pre><code>/g, "```")
@@ -190,10 +232,8 @@ async function handleIntent({ action, context, mode }) {
             .trim(),
           votes: ans.score,
           accepted: ans.is_accepted,
-          comments: comments
-            .map((c) => stripHtml(c.body))
-            .filter((text) => text.length >= 8)
-            .slice(0, 3),
+          comments: cleanComments,
+          confusion,
         };
       }),
     );
@@ -242,9 +282,52 @@ async function handleIntent({ action, context, mode }) {
 
   trimmedStackData.forEach((q) => {
     q.answers.forEach((a) => {
-      if (!a.badge) {
+      // 1️⃣ Strong base confidence
+      let baseConfidence = 50;
+
+      // Accepted answers matter a LOT
+      if (a.accepted) baseConfidence += 30;
+
+      // Votes matter, but capped
+      if (a.votes > 0) {
+        baseConfidence += Math.min(a.votes * 2, 30);
+      }
+
+      // 2️⃣ Penalize comments intelligently
+      if (!a.accepted && a.votes < 10) {
+        baseConfidence -= a.confusion * 8;
+      }
+
+      // Accepted answers get VERY mild penalty
+      if (a.accepted) {
+        baseConfidence -= a.confusion * 2;
+      }
+
+      // 3️⃣ Clamp confidence
+      a.confidence = Math.max(0, Math.min(100, baseConfidence));
+
+      // 4️⃣ Badge decision (priority-based)
+      if (a.accepted && (a.votes >= 5 || a.confidence >= 80)) {
+        a.badge = "GOLD";
+      } else if (a.confidence >= 60) {
+        a.badge = "SILVER";
+      } else if (a.confidence >= 45) {
+        a.badge = "BRONZE";
+      } else {
         a.badge = "WARNING";
-        a.badgeReason = "Not enough confidence from StackSense AI";
+      }
+
+      // Reset stale AI reason if badge was recalculated
+      if (a.badgeReason && !a.badgeReason.startsWith("Accepted")) {
+        a.badgeReason = null;
+      }
+    });
+  });
+
+  trimmedStackData.forEach((q) => {
+    q.answers.forEach((a) => {
+      if (!a.badgeReason) {
+        a.badgeReason = buildAutoBadgeReason(a);
       }
     });
   });

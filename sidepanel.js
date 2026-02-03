@@ -7,6 +7,40 @@ const improveBtn = [...actionButtons].find((btn) =>
   btn.innerText.toLowerCase().includes("improve"),
 );
 
+const badgeModal = document.getElementById("badgeModal");
+const badgeModalContent = document.getElementById("badgeModalContent");
+const closeBadgeModal = document.getElementById("closeBadgeModal");
+
+outputBox.addEventListener("click", (e) => {
+  const badge = e.target.closest(".badge");
+  if (!badge) return;
+
+  // Reset old badge colors
+  badgeModal.classList.remove("gold", "silver", "bronze", "warning");
+
+  // Apply new badge color
+  const badgeType = badge.dataset.badge || "warning";
+  badgeModal.classList.add(badgeType);
+
+  // Set content
+  badgeModalContent.textContent =
+    badge.dataset.reason || "No explanation available.";
+
+  badgeModal.classList.remove("hidden");
+});
+
+closeBadgeModal.addEventListener("click", () => {
+  badgeModal.classList.add("hidden");
+});
+
+badgeModal.querySelector(".modal-backdrop").addEventListener("click", () => {
+  badgeModal.classList.add("hidden");
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") badgeModal.classList.add("hidden");
+});
+
 const resetBtn = document.getElementById("resetBtn");
 
 resetBtn?.addEventListener("click", () => {
@@ -110,10 +144,13 @@ function renderStackSources(sources) {
     ${(() => {
       const meta = badgeMeta(ans);
       return `
-        <span class="badge ${meta.label.toLowerCase()}"
-              title="${meta.tip}">
-          ${meta.emoji} ${meta.label}
-        </span>
+       <span
+  class="badge ${meta.label.toLowerCase()}"
+  data-reason="${meta.tip}"
+  data-badge="${meta.label.toLowerCase()}"
+>
+  ${meta.emoji} ${meta.label}
+</span>
       `;
     })()}
 
@@ -129,6 +166,19 @@ function renderStackSources(sources) {
         : ""
     }
   </div>
+
+  <div class="confidence-wrapper">
+  <div class="confidence-bar">
+    <div
+  class="confidence-fill"
+  style="--confidence:${ans.confidence || 0}%"
+></div>
+  </div>
+  <div class="confidence-text">
+    AI confidence: ${ans.confidence || 0}%
+  </div>
+</div>
+
 
   <!-- ✅ THIS WAS MISSING -->
   <div class="answer-body markdown">
